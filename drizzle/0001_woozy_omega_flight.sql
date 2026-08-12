@@ -1,0 +1,2 @@
+CREATE TYPE "public"."storefront_theme" AS ENUM('MARKETPLACE', 'EDITORIAL', 'LOCAL');--> statement-breakpoint
+ALTER TABLE "businesses" ADD COLUMN "storefront_theme" "storefront_theme" DEFAULT 'MARKETPLACE' NOT NULL;
