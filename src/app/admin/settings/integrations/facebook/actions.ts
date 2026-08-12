@@ -20,7 +20,7 @@ export async function saveFacebookSettingsAction(_state: FacebookSettingsState, 
   const session = await requireSession();
   if (session.role !== "OWNER") return { error: "Only a shop owner can change Facebook settings." };
   try {
-    const settings = parseFacebookSettings({ pageAccessToken: formData.get("pageAccessToken"), pageId: formData.get("pageId"), pageName: formData.get("pageName"), isEnabled: formData.get("isEnabled") });
+    const settings = parseFacebookSettings({ pageAccessToken: formData.get("pageAccessToken"), pageId: formData.get("pageId"), pageName: formData.get("pageName"), captionTemplate: formData.get("captionTemplate"), isEnabled: formData.get("isEnabled") });
     await saveFacebookIntegration({ businessId: session.businessId, ...settings });
   } catch (error) { return { error: safeMessage(error) }; }
   revalidatePath("/admin/settings/integrations/facebook");

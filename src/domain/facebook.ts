@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { Business, Motorcycle, MotorcycleImage } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
+import { parseCaptionTemplate } from "@/domain/social-caption";
 import { buildTelegramMotorcycleCaption } from "@/domain/telegram";
 
 const facebookSettingsSchema = z.object({
@@ -14,13 +15,14 @@ const facebookSettingsSchema = z.object({
     (value) => value === "" || value === null ? undefined : value,
     z.string().trim().max(200).optional(),
   ),
+  captionTemplate: z.unknown().optional(),
   isEnabled: z.preprocess((value) => value === "on" || value === "true" || value === true, z.boolean()),
 });
 
 export function parseFacebookSettings(value: unknown) {
   const result = facebookSettingsSchema.safeParse(value);
   if (!result.success) throw new DomainError(result.error.issues[0]?.message ?? "Invalid Facebook settings.", "INVALID_INPUT");
-  return result.data;
+  return { ...result.data, captionTemplate: parseCaptionTemplate(result.data.captionTemplate) };
 }
 
 export function parseGraphApiVersion(value: string | undefined) {
@@ -43,6 +45,7 @@ export function buildFacebookMotorcycleCaption(input: {
   motorcycle: PublishableMotorcycle;
   business: Business;
   publicOrigin: string;
+  template?: string | null;
 }) {
-  return buildTelegramMotorcycleCaption(input);
+  return buildTelegramMotorcycleCaption({ ...input, template: input.template, captionLimit: { channel: "Facebook", maximumLength: 5_000 } });
 }

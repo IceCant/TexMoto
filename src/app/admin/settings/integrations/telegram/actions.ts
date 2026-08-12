@@ -20,7 +20,7 @@ export async function saveTelegramSettingsAction(_state: TelegramSettingsState, 
   const session = await requireSession();
   if (session.role !== "OWNER") return { error: "Only a shop owner can change Telegram settings." };
   try {
-    const settings = parseTelegramSettings({ botToken: formData.get("botToken"), channelId: formData.get("channelId"), isEnabled: formData.get("isEnabled") });
+    const settings = parseTelegramSettings({ botToken: formData.get("botToken"), channelId: formData.get("channelId"), captionTemplate: formData.get("captionTemplate"), isEnabled: formData.get("isEnabled") });
     await saveTelegramIntegration({ businessId: session.businessId, ...settings });
   } catch (error) { return { error: safeMessage(error) }; }
   revalidatePath("/admin/settings/integrations/telegram");

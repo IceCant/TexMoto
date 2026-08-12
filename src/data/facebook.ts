@@ -12,7 +12,7 @@ import { FacebookProviderError } from "@/integrations/facebook/types";
 import { decryptSecret, encryptSecret } from "@/security/secrets";
 
 export async function getFacebookIntegrationSummary(businessId: string) {
-  const [integration] = await db.select({ id: facebookIntegrations.id, pageId: facebookIntegrations.pageId, pageName: facebookIntegrations.pageName, isEnabled: facebookIntegrations.isEnabled, updatedAt: facebookIntegrations.updatedAt }).from(facebookIntegrations).where(eq(facebookIntegrations.businessId, businessId)).limit(1);
+  const [integration] = await db.select({ id: facebookIntegrations.id, pageId: facebookIntegrations.pageId, pageName: facebookIntegrations.pageName, captionTemplate: facebookIntegrations.captionTemplate, isEnabled: facebookIntegrations.isEnabled, updatedAt: facebookIntegrations.updatedAt }).from(facebookIntegrations).where(eq(facebookIntegrations.businessId, businessId)).limit(1);
   return integration ?? null;
 }
 
@@ -22,12 +22,12 @@ async function getFacebookIntegrationWithSecret(businessId: string) {
   return { ...integration, pageAccessToken: decryptSecret(integration.pageAccessTokenEncrypted) };
 }
 
-export async function saveFacebookIntegration(input: { businessId: string; pageAccessToken?: string; pageId: string; pageName?: string; isEnabled: boolean }) {
+export async function saveFacebookIntegration(input: { businessId: string; pageAccessToken?: string; pageId: string; pageName?: string; captionTemplate?: string; isEnabled: boolean }) {
   const [existing] = await db.select().from(facebookIntegrations).where(eq(facebookIntegrations.businessId, input.businessId)).limit(1);
   if (!existing && !input.pageAccessToken) throw new DomainError("Enter a Page access token.", "INVALID_INPUT");
   const pageAccessTokenEncrypted = input.pageAccessToken ? encryptSecret(input.pageAccessToken) : existing!.pageAccessTokenEncrypted;
-  const values = { businessId: input.businessId, pageAccessTokenEncrypted, pageId: input.pageId, pageName: input.pageName ?? null, isEnabled: input.isEnabled, updatedAt: new Date() };
-  const [integration] = await db.insert(facebookIntegrations).values(values).onConflictDoUpdate({ target: facebookIntegrations.businessId, set: { pageAccessTokenEncrypted, pageId: values.pageId, pageName: values.pageName, isEnabled: values.isEnabled, updatedAt: values.updatedAt } }).returning({ id: facebookIntegrations.id, pageId: facebookIntegrations.pageId, pageName: facebookIntegrations.pageName, isEnabled: facebookIntegrations.isEnabled });
+  const values = { businessId: input.businessId, pageAccessTokenEncrypted, pageId: input.pageId, pageName: input.pageName ?? null, captionTemplate: input.captionTemplate ?? null, isEnabled: input.isEnabled, updatedAt: new Date() };
+  const [integration] = await db.insert(facebookIntegrations).values(values).onConflictDoUpdate({ target: facebookIntegrations.businessId, set: { pageAccessTokenEncrypted, pageId: values.pageId, pageName: values.pageName, captionTemplate: values.captionTemplate, isEnabled: values.isEnabled, updatedAt: values.updatedAt } }).returning({ id: facebookIntegrations.id, pageId: facebookIntegrations.pageId, pageName: facebookIntegrations.pageName, captionTemplate: facebookIntegrations.captionTemplate, isEnabled: facebookIntegrations.isEnabled });
   if (!integration) throw new Error("Facebook integration save did not return a row.");
   return integration;
 }
@@ -57,6 +57,7 @@ export async function publishMotorcycleToFacebook(input: { motorcycleId: string;
   assertFacebookPublishable(motorcycle);
   if (!integration.isEnabled) throw new DomainError("Enable Facebook before publishing.", "INVALID_STATE");
   if (!business) throw new DomainError("Shop not found.", "NOT_FOUND");
+  const message = buildFacebookMotorcycleCaption({ motorcycle, business, publicOrigin: input.publicOrigin, template: integration.captionTemplate });
 
   const [inserted] = await db.insert(publications).values({ businessId: input.businessId, motorcycleId: input.motorcycleId, channel: "FACEBOOK", status: "PENDING", lastAttemptAt: new Date() }).onConflictDoNothing({ target: [publications.businessId, publications.motorcycleId, publications.channel] }).returning();
   let publication = inserted;
@@ -74,7 +75,7 @@ export async function publishMotorcycleToFacebook(input: { motorcycleId: string;
     const result = await getFacebookPublisher().publishMotorcycle({
       pageAccessToken: integration.pageAccessToken,
       pageId: integration.pageId,
-      message: buildFacebookMotorcycleCaption({ motorcycle, business, publicOrigin: input.publicOrigin }),
+      message,
       imageUrls: motorcycle.images.map((image) => publicImageUrl(input.publicOrigin, image.url)),
     });
     const [published] = await db.update(publications).set({ status: "PUBLISHED", externalPostId: result.externalPostId, externalUrl: result.externalUrl ?? null, publishedAt: new Date(), lastErrorCode: null, lastErrorMessage: null, updatedAt: new Date() }).where(eq(publications.id, publication.id)).returning();

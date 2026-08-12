@@ -9,12 +9,15 @@ import {
   IconNews,
   IconBrandTelegram,
   IconBrandFacebook,
+  IconChevronRight,
 } from "@tabler/icons-react";
 
 import { setLocaleAction, setStorefrontThemeAction } from "@/app/admin/actions";
 import { requirePageSession } from "@/auth/page-session";
 import type { StorefrontTheme } from "@/domain/storefront-theme";
 import { getLocale } from "@/i18n/server";
+import { getFacebookIntegrationSummary } from "@/data/facebook";
+import { getTelegramIntegrationSummary } from "@/data/telegram";
 
 export const metadata = { title: "Settings" };
 
@@ -50,6 +53,7 @@ const themeOptions: Array<{
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ style?: string }> }) {
   const [session, locale, query] = await Promise.all([requirePageSession(), getLocale(), searchParams]);
+  const [telegram, facebook] = await Promise.all([getTelegramIntegrationSummary(session.businessId), getFacebookIntegrationSummary(session.businessId)]);
   const wasSaved = query.style === "saved";
 
   return (
@@ -68,8 +72,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
       <section className="card settings-section">
         <div className="settings-section-heading"><span><IconBrandTelegram size={21} /></span><div><h2>Integrations</h2><p>Connect external channels without affecting normal inventory management.</p></div></div>
-        <Link className="settings-integration-link" href="/admin/settings/integrations/telegram"><span><IconBrandTelegram size={20} /><strong>Telegram</strong></span><small>Configure bot and channel publishing</small></Link>
-        <Link className="settings-integration-link" href="/admin/settings/integrations/facebook"><span><IconBrandFacebook size={20} /><strong>Facebook Page</strong></span><small>Configure automatic Page publishing</small></Link>
+        <Link className="settings-integration-link" href="/admin/settings/integrations/telegram"><span className="settings-integration-brand"><span><IconBrandTelegram size={20} /></span><span><strong>Telegram</strong><small>Channel publishing</small></span></span><span className={`integration-status ${telegram?.isEnabled ? "is-connected" : ""}`}>{telegram?.isEnabled ? "Active" : telegram ? "Paused" : "Set up"}</span><IconChevronRight size={18} /></Link>
+        <Link className="settings-integration-link" href="/admin/settings/integrations/facebook"><span className="settings-integration-brand"><span><IconBrandFacebook size={20} /></span><span><strong>Facebook Page</strong><small>Automatic Page publishing</small></span></span><span className={`integration-status ${facebook?.isEnabled ? "is-connected" : ""}`}>{facebook?.isEnabled ? "Active" : facebook ? "Paused" : "Set up"}</span><IconChevronRight size={18} /></Link>
       </section>
 
       <section className="card settings-section">

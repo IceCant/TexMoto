@@ -12,7 +12,7 @@ import { TelegramProviderError } from "@/integrations/telegram/types";
 import { decryptSecret, encryptSecret } from "@/security/secrets";
 
 export async function getTelegramIntegrationSummary(businessId: string) {
-  const [integration] = await db.select({ id: telegramIntegrations.id, channelId: telegramIntegrations.channelId, channelUsername: telegramIntegrations.channelUsername, isEnabled: telegramIntegrations.isEnabled, updatedAt: telegramIntegrations.updatedAt }).from(telegramIntegrations).where(eq(telegramIntegrations.businessId, businessId)).limit(1);
+  const [integration] = await db.select({ id: telegramIntegrations.id, channelId: telegramIntegrations.channelId, channelUsername: telegramIntegrations.channelUsername, captionTemplate: telegramIntegrations.captionTemplate, isEnabled: telegramIntegrations.isEnabled, updatedAt: telegramIntegrations.updatedAt }).from(telegramIntegrations).where(eq(telegramIntegrations.businessId, businessId)).limit(1);
   return integration ?? null;
 }
 
@@ -22,12 +22,12 @@ async function getTelegramIntegrationWithSecret(businessId: string) {
   return { ...integration, botToken: decryptSecret(integration.botTokenEncrypted) };
 }
 
-export async function saveTelegramIntegration(input: { businessId: string; botToken?: string; channelId: string; channelUsername?: string; isEnabled: boolean }) {
+export async function saveTelegramIntegration(input: { businessId: string; botToken?: string; channelId: string; channelUsername?: string; captionTemplate?: string; isEnabled: boolean }) {
   const [existing] = await db.select().from(telegramIntegrations).where(eq(telegramIntegrations.businessId, input.businessId)).limit(1);
   if (!existing && !input.botToken) throw new DomainError("Enter the BotFather token.", "INVALID_INPUT");
   const botTokenEncrypted = input.botToken ? encryptSecret(input.botToken) : existing!.botTokenEncrypted;
-  const values = { businessId: input.businessId, botTokenEncrypted, channelId: input.channelId, channelUsername: input.channelUsername ?? null, isEnabled: input.isEnabled, updatedAt: new Date() };
-  const [integration] = await db.insert(telegramIntegrations).values(values).onConflictDoUpdate({ target: telegramIntegrations.businessId, set: { botTokenEncrypted, channelId: values.channelId, channelUsername: values.channelUsername, isEnabled: values.isEnabled, updatedAt: values.updatedAt } }).returning({ id: telegramIntegrations.id, channelId: telegramIntegrations.channelId, channelUsername: telegramIntegrations.channelUsername, isEnabled: telegramIntegrations.isEnabled });
+  const values = { businessId: input.businessId, botTokenEncrypted, channelId: input.channelId, channelUsername: input.channelUsername ?? null, captionTemplate: input.captionTemplate ?? null, isEnabled: input.isEnabled, updatedAt: new Date() };
+  const [integration] = await db.insert(telegramIntegrations).values(values).onConflictDoUpdate({ target: telegramIntegrations.businessId, set: { botTokenEncrypted, channelId: values.channelId, channelUsername: values.channelUsername, captionTemplate: values.captionTemplate, isEnabled: values.isEnabled, updatedAt: values.updatedAt } }).returning({ id: telegramIntegrations.id, channelId: telegramIntegrations.channelId, channelUsername: telegramIntegrations.channelUsername, captionTemplate: telegramIntegrations.captionTemplate, isEnabled: telegramIntegrations.isEnabled });
   if (!integration) throw new Error("Telegram integration save did not return a row.");
   return integration;
 }
@@ -55,6 +55,7 @@ export async function publishMotorcycleToTelegram(input: { motorcycleId: string;
   assertTelegramPublishable(motorcycle);
   if (!integration.isEnabled) throw new DomainError("Enable Telegram before publishing.", "INVALID_STATE");
   if (!business) throw new DomainError("Shop not found.", "NOT_FOUND");
+  const caption = buildTelegramMotorcycleCaption({ motorcycle, business, publicOrigin: input.publicOrigin, template: integration.captionTemplate });
 
   const [inserted] = await db.insert(publications).values({ businessId: input.businessId, motorcycleId: input.motorcycleId, channel: "TELEGRAM", status: "PENDING", lastAttemptAt: new Date() }).onConflictDoNothing({ target: [publications.businessId, publications.motorcycleId, publications.channel] }).returning();
   let publication = inserted;
@@ -73,7 +74,7 @@ export async function publishMotorcycleToTelegram(input: { motorcycleId: string;
       botToken: integration.botToken,
       channelId: integration.channelId,
       channelUsername: integration.channelUsername,
-      caption: buildTelegramMotorcycleCaption({ motorcycle, business, publicOrigin: input.publicOrigin }),
+      caption,
       imageUrls: motorcycle.images.map((image) => publicImageUrl(input.publicOrigin, image.url)),
     });
     const [published] = await db.update(publications).set({ status: "PUBLISHED", externalPostId: result.externalPostId, externalUrl: result.externalUrl ?? null, publishedAt: new Date(), lastErrorCode: null, lastErrorMessage: null, updatedAt: new Date() }).where(eq(publications.id, publication.id)).returning();

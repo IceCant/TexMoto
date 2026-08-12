@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { Business, Motorcycle, MotorcycleImage } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
+import { assertCaptionLength, parseCaptionTemplate, renderCaptionTemplate } from "@/domain/social-caption";
 import { displayMotorcycleName, formatPrice } from "@/lib/format";
 
 export const telegramCaptionModes = ["EN", "KM", "BILINGUAL"] as const;
@@ -9,6 +10,7 @@ export const telegramCaptionModes = ["EN", "KM", "BILINGUAL"] as const;
 const telegramSettingsSchema = z.object({
   botToken: z.preprocess((value) => value === "" || value === null ? undefined : value, z.string().trim().min(20, "Enter the BotFather token.").optional()),
   channelId: z.string().trim().min(2, "Channel ID or username is required.").max(200),
+  captionTemplate: z.unknown().optional(),
   isEnabled: z.preprocess((value) => value === "on" || value === "true" || value === true, z.boolean()),
 });
 
@@ -16,7 +18,7 @@ export function parseTelegramSettings(value: unknown) {
   const result = telegramSettingsSchema.safeParse(value);
   if (!result.success) throw new DomainError(result.error.issues[0]?.message ?? "Invalid Telegram settings.", "INVALID_INPUT");
   const channelUsername = result.data.channelId.startsWith("@") ? result.data.channelId.slice(1) : undefined;
-  return { ...result.data, channelUsername };
+  return { ...result.data, captionTemplate: parseCaptionTemplate(result.data.captionTemplate), channelUsername };
 }
 
 type CaptionMotorcycle = Pick<Motorcycle, "brand" | "model" | "year" | "condition" | "color" | "mileage" | "engineCc" | "description" | "price" | "currency" | "slug">;
@@ -49,11 +51,21 @@ export function buildTelegramMotorcycleCaption(input: {
   business: CaptionBusiness;
   publicOrigin: string;
   mode?: (typeof telegramCaptionModes)[number];
+  template?: string | null;
+  captionLimit?: { channel: "Telegram" | "Facebook"; maximumLength: number };
 }) {
+  const captionLimit = input.captionLimit ?? { channel: "Telegram" as const, maximumLength: 1_024 };
+  if (input.template) {
+    const caption = renderCaptionTemplate({ ...input, template: input.template });
+    assertCaptionLength(caption, captionLimit.channel, captionLimit.maximumLength);
+    return caption;
+  }
   const mode = input.mode ?? "BILINGUAL";
   const details = mode === "EN" ? englishDetails(input.motorcycle) : mode === "KM" ? khmerDetails(input.motorcycle) : `${khmerDetails(input.motorcycle)}\n\n${englishDetails(input.motorcycle)}`;
   const listingUrl = new URL(`/${input.business.slug}/moto/${input.motorcycle.slug}`, input.publicOrigin).toString();
-  return [details, input.motorcycle.description?.trim() || null, `📍 ${input.business.name}`, input.business.phone ? `📞 ${input.business.phone}` : null, `ព័ត៌មានលម្អិត / Details:\n${listingUrl}`].filter(Boolean).join("\n\n");
+  const caption = [details, input.motorcycle.description?.trim() || null, `📍 ${input.business.name}`, input.business.phone ? `📞 ${input.business.phone}` : null, `ព័ត៌មានលម្អិត / Details:\n${listingUrl}`].filter(Boolean).join("\n\n");
+  assertCaptionLength(caption, captionLimit.channel, captionLimit.maximumLength);
+  return caption;
 }
 
 export function assertTelegramPublishable(motorcycle: Motorcycle & { images: MotorcycleImage[] }) {

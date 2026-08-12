@@ -4,7 +4,7 @@ import { parseFacebookSettings, parseGraphApiVersion } from "@/domain/facebook";
 
 describe("Facebook boundaries", () => {
   it("parses Page settings and checkbox state", () => {
-    expect(parseFacebookSettings({ pageAccessToken: "a-valid-facebook-page-token", pageId: "123456", pageName: " Demo ", isEnabled: "on" })).toEqual({ pageAccessToken: "a-valid-facebook-page-token", pageId: "123456", pageName: "Demo", isEnabled: true });
+    expect(parseFacebookSettings({ pageAccessToken: "a-valid-facebook-page-token", pageId: "123456", pageName: " Demo ", captionTemplate: " {name} ", isEnabled: "on" })).toEqual({ pageAccessToken: "a-valid-facebook-page-token", pageId: "123456", pageName: "Demo", captionTemplate: "{name}", isEnabled: true });
   });
 
   it("rejects non-numeric Page IDs", () => {
