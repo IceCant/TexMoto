@@ -9,8 +9,8 @@ async function seed() {
       name: "Sokha Moto",
       slug: "sokha-moto",
       phone: "+855 12 345 678",
-      telegram: "sokhamoto",
-      facebook: "sokhamoto",
+      telegram: "texmoto",
+      facebook: "texmoto",
       address: "Phnom Penh, Cambodia",
     })
     .onConflictDoUpdate({ target: businesses.slug, set: { name: "Sokha Moto", updatedAt: new Date() } })
@@ -22,7 +22,7 @@ async function seed() {
     .values({
       businessId: business.id,
       name: "Sokha Owner",
-      email: "owner@sokhamoto.test",
+      email: "owner@texmoto.test",
       passwordHash: await hash("TexMoto123!", 12),
       role: "OWNER",
     })
@@ -43,7 +43,7 @@ async function seed() {
     if (!motorcycle) throw new Error(`Failed to seed ${demo.model}.`);
     await db.insert(motorcycleImages).values({ motorcycleId: motorcycle.id, url: demo.image, sortOrder: 0 }).onConflictDoUpdate({ target: [motorcycleImages.motorcycleId, motorcycleImages.sortOrder], set: { url: demo.image } });
   }
-  console.info("Seeded Sokha Moto. Login: owner@sokhamoto.test / TexMoto123!");
+  console.info("Seeded Sokha Moto. Login: owner@texmoto.test / TexMoto123!");
 }
 
 seed().then(() => sql.end()).catch(async (error) => { console.error(error); await sql.end(); process.exit(1); });

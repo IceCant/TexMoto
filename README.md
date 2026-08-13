@@ -22,7 +22,7 @@ Requirements: Node.js 20.9+ and PostgreSQL 15+.
 5. Run `npm run db:seed`.
 6. Run `npm run dev`.
 
-Demo login: `owner@sokhamoto.test` / `TexMoto123!`. Replace it before a real deployment.
+Demo login: `owner@texmoto.test` / `TexMoto123!`. Replace it before a real deployment.
 
 ## Environment variables
 
@@ -58,7 +58,7 @@ Local images live under `public/uploads`. A real Telegram channel cannot fetch a
 1. In Telegram, open `@BotFather`, run `/newbot`, and copy the resulting token.
 2. Add the bot to the target channel as an administrator with permission to post messages.
 3. In TexMoto, open **Settings → Integrations → Telegram**.
-4. Enter the bot token and the channel username (for example `@sokhamoto`) or numeric channel ID.
+4. Enter the bot token and the channel username (for example `@texmoto`) or numeric channel ID.
 5. Enable publishing and save. TexMoto encrypts the token and never displays it again.
 6. Press **Test connection**.
 7. New website publications now post automatically. The motorcycle detail screen also provides manual retry after a failure.

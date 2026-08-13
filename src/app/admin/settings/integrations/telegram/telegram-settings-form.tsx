@@ -19,7 +19,7 @@ export function TelegramSettingsForm({ integration }: { integration: { channelId
       {testState.success ? <p className="form-success" role="status">{testState.success}</p> : null}
       <form action={saveAction} className="integration-form">
         <label><span>Bot token</span><input className="field" name="botToken" type="password" autoComplete="new-password" placeholder={integration ? "Leave blank to keep the saved token" : "123456:ABC..."} required={!integration} /></label>
-        <label><span>Channel ID or username</span><input className="field" name="channelId" defaultValue={integration?.channelId} placeholder="@sokhamoto or -100..." required /></label>
+        <label><span>Channel ID or username</span><input className="field" name="channelId" defaultValue={integration?.channelId} placeholder="@texmoto or -100..." required /></label>
         <CaptionTemplateField defaultValue={integration?.captionTemplate} />
         <label className="integration-toggle"><input name="isEnabled" type="checkbox" defaultChecked={integration?.isEnabled} /><span><strong>Automatically publish to Telegram</strong><small>Posts when a motorcycle becomes available on the website.</small></span></label>
         <button className="button-primary" disabled={isSaving}>{isSaving ? "Saving…" : "Save configuration"}</button>

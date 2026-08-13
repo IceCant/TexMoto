@@ -12,9 +12,11 @@ import { getMotorcycleCommerce, listCustomerOptions } from "@/data/sales";
 import { getMotorcycleTelegramPublication, getTelegramIntegrationSummary } from "@/data/telegram";
 import { getFacebookIntegrationSummary, getMotorcycleFacebookPublication } from "@/data/facebook";
 import { displayMotorcycleName, formatPrice } from "@/lib/format";
+import { getLocale } from "@/i18n/server";
 
 export default async function MotorcycleDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const session = await requirePageSession();
+  const locale = await getLocale();
   const { id } = await params;
   const query = await searchParams;
   const [motorcycle, telegram, telegramIntegration, facebook, facebookIntegration, commerce, customerOptions] = await Promise.all([getAdminMotorcycleById(id, session.businessId), getMotorcycleTelegramPublication(id, session.businessId), getTelegramIntegrationSummary(session.businessId), getMotorcycleFacebookPublication(id, session.businessId), getFacebookIntegrationSummary(session.businessId), getMotorcycleCommerce(id, session.businessId), listCustomerOptions(session.businessId)]);
@@ -42,10 +44,10 @@ export default async function MotorcycleDetailPage({ params, searchParams }: { p
       <section className="commerce-panel">
         {motorcycle.status === "AVAILABLE" ? <div className="commerce-actions"><ReserveForm action={reserveMotorcycleAction.bind(null, id)} /><SaleForm action={completeSaleAction.bind(null, id)} listedPrice={motorcycle.price ?? ""} currency={motorcycle.currency} customers={customerOptions} /><StatusButton id={id} status="HIDDEN" label="Hide" /></div> : null}
         {motorcycle.status === "RESERVED" ? <><div className="reservation-summary card"><span><IconClock size={20} /></span><div><p>Reserved for</p><h3>{commerce.reservation?.customerName}</h3><a href={`tel:${commerce.reservation?.phone}`}><IconPhone size={15} /> {commerce.reservation?.phone}</a></div></div><div className="commerce-actions"><SaleForm action={completeSaleAction.bind(null, id)} listedPrice={motorcycle.price ?? ""} currency={motorcycle.currency} customers={customerOptions} /><form action={cancelReservationAction.bind(null, id)}><button className="button-secondary">Cancel reservation</button></form></div></> : null}
-        {motorcycle.status === "SOLD" && commerce.sale ? <div className="sale-summary card"><div className="sale-summary-title"><IconReceipt size={21} /><div><p>Sold</p><h2>{commerce.sale.customer?.name ?? "Buyer not recorded"}</h2>{commerce.sale.customer?.phone ? <a href={`tel:${commerce.sale.customer.phone}`}>{commerce.sale.customer.phone}</a> : null}</div></div><dl><div><dt>Listed price</dt><dd>{formatPrice(commerce.sale.sale.listedPrice, commerce.sale.sale.currency)}</dd></div><div><dt>Selling price</dt><dd>{formatPrice(commerce.sale.sale.sellingPrice, commerce.sale.sale.currency)}</dd></div><div><dt>Sold</dt><dd>{commerce.sale.sale.soldAt.toLocaleDateString("en-GB")}</dd></div><div><dt>Payment</dt><dd>{commerce.sale.sale.paymentMethod.replace("_", " ")}</dd></div></dl>{commerce.sale.customer ? <Link href={`/admin/customers/${commerce.sale.customer.id}`}>View customer</Link> : null}</div> : null}
+        {motorcycle.status === "SOLD" && commerce.sale ? <div className="sale-summary card"><div className="sale-summary-title"><IconReceipt size={21} /><div><p>Sold</p><h2>{commerce.sale.customer?.name ?? "Buyer not recorded"}</h2>{commerce.sale.customer?.phone ? <a href={`tel:${commerce.sale.customer.phone}`}>{commerce.sale.customer.phone}</a> : null}</div></div><dl><div><dt>Listed price</dt><dd>{formatPrice(commerce.sale.sale.listedPrice, commerce.sale.sale.currency)}</dd></div><div><dt>Selling price</dt><dd>{formatPrice(commerce.sale.sale.sellingPrice, commerce.sale.sale.currency)}</dd></div><div><dt>Sold</dt><dd>{commerce.sale.sale.soldAt.toLocaleDateString("en-GB")}</dd></div><div><dt>Payment</dt><dd>{commerce.sale.sale.paymentMethod.replace("_", " ")}</dd></div></dl><div className="sale-summary-links"><Link className="button-primary" href={`/admin/sales/${commerce.sale.sale.id}/receipt`}><IconReceipt size={17} /> Receipt & service book</Link>{commerce.sale.customer ? <Link className="button-secondary" href={`/admin/customers/${commerce.sale.customer.id}`}>View customer</Link> : null}</div></div> : null}
       </section>
     </div>
-    {motorcycle.status !== "SOLD" ? <MotorcycleForm action={updateAction} motorcycle={motorcycle} /> : null}
+    {motorcycle.status !== "SOLD" ? <MotorcycleForm action={updateAction} motorcycle={motorcycle} locale={locale} /> : null}
   </div>;
 }
 

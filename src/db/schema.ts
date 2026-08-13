@@ -26,6 +26,7 @@ export const publicationChannel = pgEnum("publication_channel", ["TELEGRAM", "FA
 export const publicationStatus = pgEnum("publication_status", ["PENDING", "PUBLISHED", "FAILED"]);
 export const reservationStatus = pgEnum("reservation_status", ["ACTIVE", "CANCELLED", "COMPLETED"]);
 export const paymentMethod = pgEnum("payment_method", ["CASH", "KHQR", "BANK_TRANSFER", "OTHER"]);
+export const serviceRecordType = pgEnum("service_record_type", ["MAINTENANCE", "REPAIR", "WARRANTY", "INSPECTION"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -230,18 +231,46 @@ export const motorcycleSales = pgTable(
     currency: currency("currency").notNull(),
     paymentMethod: paymentMethod("payment_method").notNull(),
     soldAt: timestamp("sold_at", { withTimezone: true }).notNull().defaultNow(),
+    receiptAccessToken: uuid("receipt_access_token").notNull().defaultRandom(),
+    warrantyExpiresAt: timestamp("warranty_expires_at", { withTimezone: true }),
+    warrantyTerms: text("warranty_terms"),
     notes: text("notes"),
     createdByUserId: uuid("created_by_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
     ...timestamps,
   },
   (table) => [
     uniqueIndex("motorcycle_sales_business_motorcycle_unique").on(table.businessId, table.motorcycleId),
+    uniqueIndex("motorcycle_sales_receipt_access_unique").on(table.receiptAccessToken),
     index("motorcycle_sales_business_sold_idx").on(table.businessId, table.soldAt),
     index("motorcycle_sales_customer_idx").on(table.customerId),
   ],
 );
 
-export const schema = { businesses, users, sessions, motorcycles, motorcycleImages, telegramIntegrations, facebookIntegrations, publications, customers, motorcycleReservations, motorcycleSales };
+export const motorcycleServiceRecords = pgTable(
+  "motorcycle_service_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessId: uuid("business_id").notNull().references(() => businesses.id, { onDelete: "cascade" }),
+    motorcycleId: uuid("motorcycle_id").notNull().references(() => motorcycles.id, { onDelete: "cascade" }),
+    saleId: uuid("sale_id").notNull().references(() => motorcycleSales.id, { onDelete: "cascade" }),
+    type: serviceRecordType("type").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    odometer: integer("odometer"),
+    cost: numeric("cost", { precision: 14, scale: 2 }),
+    currency: currency("currency").notNull().default("USD"),
+    servicedAt: timestamp("serviced_at", { withTimezone: true }).notNull().defaultNow(),
+    nextServiceAt: timestamp("next_service_at", { withTimezone: true }),
+    createdByUserId: uuid("created_by_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("service_records_sale_date_idx").on(table.saleId, table.servicedAt),
+    index("service_records_business_motorcycle_idx").on(table.businessId, table.motorcycleId),
+  ],
+);
+
+export const schema = { businesses, users, sessions, motorcycles, motorcycleImages, telegramIntegrations, facebookIntegrations, publications, customers, motorcycleReservations, motorcycleSales, motorcycleServiceRecords };
 
 export type Business = typeof businesses.$inferSelect;
 export type User = typeof users.$inferSelect;
@@ -253,3 +282,4 @@ export type Publication = typeof publications.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type MotorcycleReservation = typeof motorcycleReservations.$inferSelect;
 export type MotorcycleSale = typeof motorcycleSales.$inferSelect;
+export type MotorcycleServiceRecord = typeof motorcycleServiceRecords.$inferSelect;

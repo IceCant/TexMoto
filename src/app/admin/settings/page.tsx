@@ -12,10 +12,12 @@ import {
   IconChevronRight,
 } from "@tabler/icons-react";
 
-import { setLocaleAction, setStorefrontThemeAction } from "@/app/admin/actions";
+import { setStorefrontThemeAction } from "@/app/admin/actions";
+import { setLocaleAction } from "@/i18n/actions";
 import { requirePageSession } from "@/auth/page-session";
 import type { StorefrontTheme } from "@/domain/storefront-theme";
 import { getLocale } from "@/i18n/server";
+import { getDictionary } from "@/i18n/dictionaries";
 import { getFacebookIntegrationSummary } from "@/data/facebook";
 import { getTelegramIntegrationSummary } from "@/data/telegram";
 
@@ -53,31 +55,32 @@ const themeOptions: Array<{
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ style?: string }> }) {
   const [session, locale, query] = await Promise.all([requirePageSession(), getLocale(), searchParams]);
+  const t = getDictionary(locale);
   const [telegram, facebook] = await Promise.all([getTelegramIntegrationSummary(session.businessId), getFacebookIntegrationSummary(session.businessId)]);
   const wasSaved = query.style === "saved";
 
   return (
     <div className="settings-page max-w-3xl">
       <div className="settings-title-row">
-        <div><p className="eyebrow">Workspace</p><h1>Settings</h1><p>Manage how your team works and how customers see your shop.</p></div>
-        <Link className="button-secondary settings-preview-link" href={`/${session.businessSlug}`} target="_blank"><IconExternalLink size={18} /> View storefront</Link>
+        <div><p className="eyebrow">{t["settings.workspace"]}</p><h1>{t["settings.title"]}</h1><p>{t["settings.subtitle"]}</p></div>
+        <Link className="button-secondary settings-preview-link" href={`/${session.businessSlug}`} target="_blank"><IconExternalLink size={18} /> {t["settings.viewStorefront"]}</Link>
       </div>
 
       {wasSaved ? <div className="settings-success" role="status"><IconCheck size={19} /> Storefront style updated.</div> : null}
 
       <section className="card settings-section">
-        <div className="settings-section-heading"><span><IconBuildingStore size={21} /></span><div><h2>Shop</h2><p>Your public business identity.</p></div></div>
-        <dl className="settings-details"><div><dt>Shop name</dt><dd>{session.businessName}</dd></div><div><dt>Public address</dt><dd><Link href={`/${session.businessSlug}`} target="_blank">texmoto.com/{session.businessSlug}</Link></dd></div></dl>
+        <div className="settings-section-heading"><span><IconBuildingStore size={21} /></span><div><h2>{t["settings.shop"]}</h2><p>{t["settings.shopHint"]}</p></div></div>
+        <dl className="settings-details"><div><dt>{t["settings.shopName"]}</dt><dd>{session.businessName}</dd></div><div><dt>{t["settings.publicAddress"]}</dt><dd><Link href={`/${session.businessSlug}`} target="_blank">texmoto.com/{session.businessSlug}</Link></dd></div></dl>
       </section>
 
       <section className="card settings-section">
-        <div className="settings-section-heading"><span><IconBrandTelegram size={21} /></span><div><h2>Integrations</h2><p>Connect external channels without affecting normal inventory management.</p></div></div>
-        <Link className="settings-integration-link" href="/admin/settings/integrations/telegram"><span className="settings-integration-brand"><span><IconBrandTelegram size={20} /></span><span><strong>Telegram</strong><small>Channel publishing</small></span></span><span className={`integration-status ${telegram?.isEnabled ? "is-connected" : ""}`}>{telegram?.isEnabled ? "Active" : telegram ? "Paused" : "Set up"}</span><IconChevronRight size={18} /></Link>
-        <Link className="settings-integration-link" href="/admin/settings/integrations/facebook"><span className="settings-integration-brand"><span><IconBrandFacebook size={20} /></span><span><strong>Facebook Page</strong><small>Automatic Page publishing</small></span></span><span className={`integration-status ${facebook?.isEnabled ? "is-connected" : ""}`}>{facebook?.isEnabled ? "Active" : facebook ? "Paused" : "Set up"}</span><IconChevronRight size={18} /></Link>
+        <div className="settings-section-heading"><span><IconBrandTelegram size={21} /></span><div><h2>{t["settings.integrations"]}</h2><p>{t["settings.integrationsHint"]}</p></div></div>
+        <Link className="settings-integration-link" href="/admin/settings/integrations/telegram"><span className="settings-integration-brand"><span><IconBrandTelegram size={20} /></span><span><strong>Telegram</strong><small>{t["settings.channelPublishing"]}</small></span></span><span className={`integration-status ${telegram?.isEnabled ? "is-connected" : ""}`}>{telegram?.isEnabled ? t["settings.active"] : telegram ? t["settings.paused"] : t["settings.setup"]}</span><IconChevronRight size={18} /></Link>
+        <Link className="settings-integration-link" href="/admin/settings/integrations/facebook"><span className="settings-integration-brand"><span><IconBrandFacebook size={20} /></span><span><strong>Facebook Page</strong><small>{t["settings.pagePublishing"]}</small></span></span><span className={`integration-status ${facebook?.isEnabled ? "is-connected" : ""}`}>{facebook?.isEnabled ? t["settings.active"] : facebook ? t["settings.paused"] : t["settings.setup"]}</span><IconChevronRight size={18} /></Link>
       </section>
 
       <section className="card settings-section">
-        <div className="settings-section-heading"><span><IconLayoutGrid size={21} /></span><div><h2>Storefront style</h2><p>Choose one design for every customer visiting your shop.</p></div></div>
+        <div className="settings-section-heading"><span><IconLayoutGrid size={21} /></span><div><h2>{t["settings.style"]}</h2><p>{t["settings.styleHint"]}</p></div></div>
         <form action={setStorefrontThemeAction}>
           <fieldset className="theme-options">
             <legend className="sr-only">Storefront style</legend>
@@ -90,12 +93,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               </label>
             ))}
           </fieldset>
-          <div className="settings-form-footer"><p>The selected style also applies to motorcycle detail pages.</p><button className="button-primary" type="submit">Save storefront style</button></div>
+          <div className="settings-form-footer"><p>{t["settings.styleFooter"]}</p><button className="button-primary" type="submit">{t["settings.saveStyle"]}</button></div>
         </form>
       </section>
 
       <section className="card settings-section">
-        <div className="settings-section-heading"><span><IconLanguage size={21} /></span><div><h2>Language</h2><p>Choose the admin interface language for this browser.</p></div></div>
+        <div className="settings-section-heading"><span><IconLanguage size={21} /></span><div><h2>{t["settings.language"]}</h2><p>{t["settings.languageHint"]}</p></div></div>
         <form action={setLocaleAction} className="settings-language"><button className={locale === "en" ? "button-primary" : "button-secondary"} name="locale" value="en">English</button><button className={locale === "km" ? "button-primary" : "button-secondary"} name="locale" value="km">ខ្មែរ</button></form>
       </section>
     </div>

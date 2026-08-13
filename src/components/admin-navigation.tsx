@@ -6,13 +6,13 @@ import { Bike, CirclePlus, House, Receipt, Settings, Users, type LucideIcon } fr
 
 type NavigationItem = { href: string; label: string; icon: LucideIcon; mobile?: boolean };
 
-export function AdminNavigation({ labels }: { labels: { home: string; motorcycles: string; add: string; settings: string } }) {
+export function AdminNavigation({ labels }: { labels: { home: string; motorcycles: string; customers: string; sales: string; add: string; settings: string } }) {
   const pathname = usePathname();
   const navigation: NavigationItem[] = [
     { href: "/admin", label: labels.home, icon: House, mobile: true },
     { href: "/admin/motorcycles", label: labels.motorcycles, icon: Bike, mobile: true },
-    { href: "/admin/customers", label: "Customers", icon: Users },
-    { href: "/admin/sales", label: "Sales", icon: Receipt },
+    { href: "/admin/customers", label: labels.customers, icon: Users },
+    { href: "/admin/sales", label: labels.sales, icon: Receipt },
     { href: "/admin/settings", label: labels.settings, icon: Settings, mobile: true },
   ];
 

@@ -1,11 +1,12 @@
 import "server-only";
 
-import { and, count, desc, eq, gte, ilike, max, or, sum } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, max, or, sum, type SQL } from "drizzle-orm";
 
 import { db } from "@/db";
-import { customers, motorcycleImages, motorcycleReservations, motorcycles, motorcycleSales } from "@/db/schema";
+import { businesses, customers, motorcycleImages, motorcycleReservations, motorcycleSales, motorcycleServiceRecords, motorcycles } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
-import { assertMotorcycleCanBeReserved, assertMotorcycleCanBeSold, type ReservationInput, type SaleInput } from "@/domain/sales";
+import { assertMotorcycleCanBeReserved, assertMotorcycleCanBeSold, warrantyExpiry, type ReservationInput, type SaleInput } from "@/domain/sales";
+import type { ServiceRecordInput } from "@/domain/service-record";
 
 export async function reserveMotorcycle(input: { businessId: string; motorcycleId: string; reservation: ReservationInput }) {
   return db.transaction(async (transaction) => {
@@ -49,7 +50,8 @@ export async function completeMotorcycleSale(input: { businessId: string; motorc
       customerId = customer!.id;
     }
 
-    const [sale] = await transaction.insert(motorcycleSales).values({ businessId: input.businessId, motorcycleId: input.motorcycleId, customerId, listedPrice: motorcycle.price, sellingPrice: input.sale.sellingPrice.toFixed(2), currency: motorcycle.currency, paymentMethod: input.sale.paymentMethod, notes: input.sale.notes, createdByUserId: input.createdByUserId }).returning();
+    const soldAt = new Date();
+    const [sale] = await transaction.insert(motorcycleSales).values({ businessId: input.businessId, motorcycleId: input.motorcycleId, customerId, listedPrice: motorcycle.price, sellingPrice: input.sale.sellingPrice.toFixed(2), currency: motorcycle.currency, paymentMethod: input.sale.paymentMethod, soldAt, warrantyExpiresAt: warrantyExpiry(soldAt, input.sale.warrantyMonths ?? 0), warrantyTerms: input.sale.warrantyTerms, notes: input.sale.notes, createdByUserId: input.createdByUserId }).returning();
     await transaction.update(motorcycles).set({ status: "SOLD", updatedAt: new Date() }).where(eq(motorcycles.id, input.motorcycleId));
     await transaction.update(motorcycleReservations).set({ status: "COMPLETED", customerId: customerId ?? null, updatedAt: new Date() }).where(and(eq(motorcycleReservations.businessId, input.businessId), eq(motorcycleReservations.motorcycleId, input.motorcycleId), eq(motorcycleReservations.status, "ACTIVE")));
     return sale!;
@@ -81,6 +83,51 @@ export async function getCustomerDetail(customerId: string, businessId: string) 
 
 export async function listSales(businessId: string) {
   return db.select({ sale: motorcycleSales, motorcycle: motorcycles, customer: customers, coverUrl: motorcycleImages.url }).from(motorcycleSales).innerJoin(motorcycles, eq(motorcycleSales.motorcycleId, motorcycles.id)).leftJoin(customers, eq(motorcycleSales.customerId, customers.id)).leftJoin(motorcycleImages, and(eq(motorcycleImages.motorcycleId, motorcycles.id), eq(motorcycleImages.sortOrder, 0))).where(eq(motorcycleSales.businessId, businessId)).orderBy(desc(motorcycleSales.soldAt));
+}
+
+async function getReceiptDetail(condition: SQL<unknown>) {
+  const [receipt] = await db.select({ sale: motorcycleSales, motorcycle: motorcycles, customer: customers, business: businesses, coverUrl: motorcycleImages.url })
+    .from(motorcycleSales)
+    .innerJoin(motorcycles, eq(motorcycleSales.motorcycleId, motorcycles.id))
+    .innerJoin(businesses, eq(motorcycleSales.businessId, businesses.id))
+    .leftJoin(customers, eq(motorcycleSales.customerId, customers.id))
+    .leftJoin(motorcycleImages, and(eq(motorcycleImages.motorcycleId, motorcycles.id), eq(motorcycleImages.sortOrder, 0)))
+    .where(condition)
+    .limit(1);
+  if (!receipt) throw new DomainError("Receipt not found.", "NOT_FOUND");
+  const serviceRecords = await db.select().from(motorcycleServiceRecords).where(eq(motorcycleServiceRecords.saleId, receipt.sale.id)).orderBy(desc(motorcycleServiceRecords.servicedAt));
+  return { ...receipt, serviceRecords };
+}
+
+export function getSaleReceiptById(saleId: string, businessId: string) {
+  return getReceiptDetail(and(eq(motorcycleSales.id, saleId), eq(motorcycleSales.businessId, businessId))!);
+}
+
+export function getPublicSaleReceipt(receiptAccessToken: string) {
+  return getReceiptDetail(eq(motorcycleSales.receiptAccessToken, receiptAccessToken));
+}
+
+export async function addMotorcycleServiceRecord(input: { businessId: string; saleId: string; createdByUserId: string; record: ServiceRecordInput }) {
+  return db.transaction(async (transaction) => {
+    const [sale] = await transaction.select().from(motorcycleSales).where(and(eq(motorcycleSales.id, input.saleId), eq(motorcycleSales.businessId, input.businessId))).limit(1);
+    if (!sale) throw new DomainError("Receipt not found.", "NOT_FOUND");
+    const [record] = await transaction.insert(motorcycleServiceRecords).values({
+      businessId: input.businessId,
+      motorcycleId: sale.motorcycleId,
+      saleId: sale.id,
+      createdByUserId: input.createdByUserId,
+      type: input.record.type,
+      title: input.record.title,
+      description: input.record.description,
+      odometer: input.record.odometer,
+      cost: input.record.cost?.toFixed(2),
+      currency: input.record.currency,
+      servicedAt: input.record.servicedAt,
+      nextServiceAt: input.record.nextServiceAt,
+    }).returning();
+    if (!record) throw new Error("Service record creation did not return a row.");
+    return { record, receiptAccessToken: sale.receiptAccessToken };
+  });
 }
 
 export async function getMonthlySalesSummary(businessId: string, now = new Date()) {

@@ -6,7 +6,7 @@
 2. Store the returned token securely.
 3. Add the bot to the shop channel as an administrator.
 4. Grant permission to post messages.
-5. Use the public username such as `@sokhamoto`, or the numeric channel ID such as `-1001234567890`.
+5. Use the public username such as `@texmoto`, or the numeric channel ID such as `-1001234567890`.
 
 In TexMoto, open **Settings → Integrations → Telegram**, enter the token and channel, enable the integration, save, and then test the connection.
 

@@ -1,6 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -11,11 +10,6 @@ import { parseStorefrontTheme } from "@/domain/storefront-theme";
 export async function logoutAction() {
   await deleteCurrentSession();
   redirect("/login");
-}
-
-export async function setLocaleAction(formData: FormData) {
-  const locale = formData.get("locale") === "km" ? "km" : "en";
-  (await cookies()).set("texmoto_locale", locale, { path: "/", sameSite: "lax", maxAge: 31_536_000 });
 }
 
 export async function setStorefrontThemeAction(formData: FormData) {

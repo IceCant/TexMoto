@@ -58,10 +58,11 @@ export async function cancelReservationAction(motorcycleId: string) {
 
 export async function completeSaleAction(motorcycleId: string, _state: CommerceActionState, formData: FormData): Promise<CommerceActionState> {
   const session = await requireSession();
-  try { await completeMotorcycleSale({ businessId: session.businessId, motorcycleId, createdByUserId: session.userId, sale: parseSaleInput(Object.fromEntries(formData)) }); }
+  let sale;
+  try { sale = await completeMotorcycleSale({ businessId: session.businessId, motorcycleId, createdByUserId: session.userId, sale: parseSaleInput(Object.fromEntries(formData)) }); }
   catch (error) { return actionError(error); }
   refreshMotorcycle(motorcycleId);
   revalidatePath("/admin/customers");
   revalidatePath("/admin/sales");
-  redirect(`/admin/motorcycles/${motorcycleId}?sold=1`);
+  redirect(`/admin/sales/${sale.id}/receipt?created=1`);
 }

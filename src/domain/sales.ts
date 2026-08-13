@@ -21,11 +21,14 @@ const saleSchema = z.object({
   telegramUsername: optionalText,
   sellingPrice: z.coerce.number().positive("Selling price must be greater than zero.").max(100_000_000),
   paymentMethod: z.enum(paymentMethods),
+  warrantyMonths: z.preprocess((value) => value === "" || value === null ? 0 : value, z.coerce.number().int().min(0).max(120).default(0)),
+  warrantyTerms: optionalText,
   notes: optionalText,
 });
 
 export type ReservationInput = z.infer<typeof reservationSchema>;
-export type SaleInput = z.infer<typeof saleSchema> & { newCustomer?: ReturnType<typeof parseCustomerInput> };
+type ParsedSaleInput = z.infer<typeof saleSchema>;
+export type SaleInput = Omit<ParsedSaleInput, "warrantyMonths"> & { warrantyMonths?: number; newCustomer?: ReturnType<typeof parseCustomerInput> };
 
 export function parseReservationInput(value: unknown): ReservationInput {
   const result = reservationSchema.safeParse(value);
@@ -47,4 +50,11 @@ export function assertMotorcycleCanBeReserved(status: string) {
 export function assertMotorcycleCanBeSold(status: string) {
   if (status === "SOLD") throw new DomainError("Motorcycle is already sold.", "INVALID_STATE");
   if (status !== "AVAILABLE" && status !== "RESERVED") throw new DomainError("Only available or reserved motorcycles can be sold.", "INVALID_STATE");
+}
+
+export function warrantyExpiry(soldAt: Date, warrantyMonths: number) {
+  if (warrantyMonths <= 0) return undefined;
+  const expiresAt = new Date(soldAt);
+  expiresAt.setUTCMonth(expiresAt.getUTCMonth() + warrantyMonths);
+  return expiresAt;
 }

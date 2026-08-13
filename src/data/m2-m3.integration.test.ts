@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { db, sql } from "@/db/connection";
 import { businesses, customers, motorcycleImages, motorcycleReservations, motorcycles, motorcycleSales, publications, users } from "@/db/schema";
 import { getFacebookIntegrationSummary, publishMotorcycleToFacebook, saveFacebookIntegration } from "@/data/facebook";
-import { completeMotorcycleSale, reserveMotorcycle } from "@/data/sales";
+import { addMotorcycleServiceRecord, completeMotorcycleSale, getPublicSaleReceipt, getSaleReceiptById, reserveMotorcycle } from "@/data/sales";
 import { publishMotorcycleToEnabledChannels } from "@/data/social-publishing";
 import { getTelegramIntegrationSummary, publishMotorcycleToTelegram, saveTelegramIntegration } from "@/data/telegram";
 import { setFacebookPublisherForTests } from "@/integrations/facebook";
@@ -148,5 +148,15 @@ describe.sequential("M3 database behavior", () => {
     expect(duplicate.id).toBe(first.id);
     expect((await db.select().from(motorcycleSales).where(eq(motorcycleSales.motorcycleId, availableMoto))).length).toBe(1);
     expect((await db.select().from(customers).where(and(eq(customers.businessId, shopA), eq(customers.id, first.customerId!)))).length).toBe(1);
+  });
+
+  it("keeps receipt management tenant-scoped while the private token opens customer history", async () => {
+    const [sale] = await db.select().from(motorcycleSales).where(eq(motorcycleSales.motorcycleId, availableMoto));
+    expect(sale).toBeDefined();
+    await expect(getSaleReceiptById(sale!.id, shopB)).rejects.toThrow("Receipt not found");
+    const publicReceipt = await getPublicSaleReceipt(sale!.receiptAccessToken);
+    expect(publicReceipt.motorcycle.id).toBe(availableMoto);
+    await addMotorcycleServiceRecord({ businessId: shopA, saleId: sale!.id, createdByUserId: ownerA, record: { type: "MAINTENANCE", title: "Oil change", currency: "USD", servicedAt: new Date("2026-08-12") } });
+    expect((await getPublicSaleReceipt(sale!.receiptAccessToken)).serviceRecords).toHaveLength(1);
   });
 });
