@@ -69,6 +69,13 @@ A real Telegram channel or Facebook cannot fetch a `localhost` image URL, so saf
 - Sales history and a minimal monthly sales dashboard
 - Public `RESERVED`/`SOLD` detail URLs while only `AVAILABLE` motorcycles appear in inventory results
 - English/Khmer UI structure and bilingual Telegram captions
+- Installable PWA shell with Android/desktop icons, iOS home-screen metadata, and an offline fallback
+
+## Install as an app
+
+PWA support is enabled in production builds (`npm run build && npm start`) and on HTTPS deployments. Open TexMoto in Chrome or Edge and choose **Install TexMoto** from the browser menu. On iPhone or iPad, open it in Safari, tap **Share**, then **Add to Home Screen**.
+
+The service worker deliberately caches only the offline shell, versioned application assets, and public demo motorcycle images. Customer, sales, receipt, authentication, and other dynamic records always come from the network so stale private data is not retained for offline display.
 
 ## Telegram setup
 

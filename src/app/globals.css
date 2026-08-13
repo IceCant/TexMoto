@@ -566,10 +566,12 @@ header.sticky { background: color-mix(in srgb, var(--page) 94%, transparent) !im
 .listing-header a { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; font-size: .86rem; font-weight: 800; text-decoration: none; }
 .listing-header-actions { display: flex; align-items: center; gap: 8px; }
 .listing-header-actions > img { width: 40px; height: 40px; border-radius: 11px; object-fit: cover; }
-.listing-main { width: min(1180px, 100%); display: grid; gap: 26px; margin: auto; padding: 18px 16px 50px; }
+.listing-main { width: min(1180px, 100%); display: grid; grid-template-columns: minmax(0, 1fr); gap: 26px; margin: auto; padding: 18px 16px 50px; }
+.listing-gallery, .listing-copy { min-width: 0; }
 .listing-gallery-main, .listing-gallery-empty { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius); background: var(--surface-soft); }
 .listing-gallery-main img { padding: 2px; }
-.listing-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding-top: 9px; }
+.listing-thumbnails { width: 100%; display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-inline: contain; padding-top: 9px; scrollbar-width: none; }
+.listing-thumbnails::-webkit-scrollbar { display: none; }
 .listing-thumbnails button { position: relative; width: 82px; height: 65px; flex: 0 0 auto; overflow: hidden; border: 2px solid transparent; border-radius: 10px; background: var(--surface-soft); }
 .listing-thumbnails button.is-selected { border-color: var(--primary); }
 .condition-chip-static { display: inline-flex; border-radius: 7px; background: var(--primary-soft); color: var(--primary); padding: 5px 9px; font-size: .72rem; font-weight: 850; }
@@ -611,6 +613,13 @@ header.sticky { background: color-mix(in srgb, var(--page) 94%, transparent) !im
 }
 
 @media (max-width: 430px) {
+  .listing-main { gap: 20px; padding: 12px 12px 42px; }
+  .listing-gallery-main, .listing-gallery-empty { aspect-ratio: 1 / 1; border-radius: 14px; }
+  .listing-thumbnails button { width: 72px; height: 58px; }
+  .listing-brand { margin-top: 10px; }
+  .listing-copy h1 { font-size: clamp(2rem, 10vw, 2.35rem); }
+  .listing-price { margin-top: 16px; }
+  .listing-specs, .listing-description { margin-top: 24px; padding-top: 20px; }
   .public-call-button span { display: none; }
   .public-call-button { width: 44px; padding: 0; }
   .public-header-inner { min-height: 60px; }
