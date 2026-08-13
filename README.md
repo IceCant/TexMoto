@@ -33,10 +33,27 @@ Demo login: `owner@texmoto.test` / `TexMoto123!`. Replace it before a real deplo
 | `NEXT_PUBLIC_APP_URL` | Production/social publishing | Canonical public origin used in captions and public image URLs |
 | `META_GRAPH_API_VERSION` | Facebook | Graph API version configured for your Meta app, in `vXX.X` format |
 | `SESSION_TTL_DAYS` | No | Session lifetime, default 30 days |
-| `STORAGE_DRIVER` | No | `local` is currently implemented |
+| `STORAGE_DRIVER` | No | `local` or `s3` (S3-compatible: AWS S3, Cloudflare R2, MinIO). Defaults to `local` |
+| `S3_ENDPOINT` | `s3` driver | S3-compatible endpoint URL, e.g. `http://127.0.0.1:9000` (MinIO) or `https://<account>.r2.cloudflarestorage.com` (R2) |
+| `S3_REGION` | No | S3 region, defaults to `us-east-1` |
+| `S3_BUCKET` | `s3` driver | Storage bucket name; created automatically for MinIO-style endpoints |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | `s3` driver | Access key and secret for the bucket |
+| `S3_FORCE_PATH_STYLE` | No | Set to `true` for MinIO and other path-style endpoints (default `true`, disable for most managed S3-compatible services) |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Multi-instance production | Stable Server Action key shared by instances |
 
-Local images live under `public/uploads`. A real Telegram channel cannot fetch a `localhost` URL, so safe real-provider testing requires a deployed public origin and publicly reachable storage. Use S3/R2 or durable shared storage before horizontally scaled production deployment.
+### Storage drivers
+
+`STORAGE_DRIVER=local` (default) writes uploaded photos under `public/uploads` on the application's own filesystem (or Docker container volume). This is convenient in dev and single-container setups, but the filesystem is ephemeral — it does not survive container recreation, is read-only on some production images, and is invisible to other instances.
+
+`STORAGE_DRIVER=s3` stores photos in S3-compatible object storage and serves them through the app at `/s3/<key>`, so the bucket can stay private. It is the recommended driver for Docker and production:
+
+```bash
+docker compose up -d postgres minio   # MinIO runs at http://127.0.0.1:9000, console on :9001
+```
+
+Then set `STORAGE_DRIVER=s3`, `S3_ENDPOINT=http://127.0.0.1:9000`, `S3_BUCKET=texmoto`, and `minioadmin` as both access key and secret. The bucket is created on first upload. For AWS S3 or Cloudflare R2, keep `S3_FORCE_PATH_STYLE=false` and use your provider's endpoint and keys. When the app runs inside the same compose network, use `S3_ENDPOINT=http://minio:9000` and `S3_FORCE_PATH_STYLE=true`.
+
+A real Telegram channel or Facebook cannot fetch a `localhost` image URL, so safe real-provider testing requires a deployed public origin (`NEXT_PUBLIC_APP_URL`) for both drivers.
 
 ## M1–M3 capabilities
 
