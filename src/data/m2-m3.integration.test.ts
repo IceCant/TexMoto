@@ -138,8 +138,8 @@ describe.sequential("M2 database behavior", () => {
 
 describe.sequential("M3 database behavior", () => {
   it("reserves, sells transactionally, and double-submit returns one sale", async () => {
-    await reserveMotorcycle({ businessId: shopA, motorcycleId: availableMoto, reservation: { customerName: "Sokha", phone: "012345678" } });
-    const first = await completeMotorcycleSale({ businessId: shopA, motorcycleId: availableMoto, createdByUserId: ownerA, sale: { name: "Sokha", phone: "012345678", sellingPrice: 2280, paymentMethod: "KHQR", newCustomer: { name: "Sokha", phone: "012345678" } } });
+    await reserveMotorcycle({ businessId: shopA, motorcycleId: availableMoto, reservation: { customerName: "Dara", phone: "012345678" } });
+    const first = await completeMotorcycleSale({ businessId: shopA, motorcycleId: availableMoto, createdByUserId: ownerA, sale: { name: "Dara", phone: "012345678", sellingPrice: 2280, paymentMethod: "KHQR", newCustomer: { name: "Dara", phone: "012345678" } } });
     const [motorcycle] = await db.select().from(motorcycles).where(eq(motorcycles.id, availableMoto));
     const [reservation] = await db.select().from(motorcycleReservations).where(eq(motorcycleReservations.motorcycleId, availableMoto));
     expect(motorcycle?.status).toBe("SOLD");

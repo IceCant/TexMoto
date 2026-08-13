@@ -20,7 +20,7 @@ export function FacebookSettingsForm({ integration }: { integration: { pageId: s
       <form action={saveAction} className="integration-form">
         <label><span>Page access token</span><input className="field" name="pageAccessToken" type="password" autoComplete="new-password" placeholder={integration ? "Leave blank to keep the saved token" : "Paste the Page access token"} required={!integration} /></label>
         <label><span>Facebook Page ID</span><input className="field" name="pageId" inputMode="numeric" defaultValue={integration?.pageId} placeholder="123456789012345" required /></label>
-        <label><span>Page name <small>(optional)</small></span><input className="field" name="pageName" defaultValue={integration?.pageName ?? ""} placeholder="Sokha Moto" /></label>
+        <label><span>Page name <small>(optional)</small></span><input className="field" name="pageName" defaultValue={integration?.pageName ?? ""} placeholder="TexMoto" /></label>
         <CaptionTemplateField defaultValue={integration?.captionTemplate} />
         <label className="integration-toggle"><input name="isEnabled" type="checkbox" defaultChecked={integration?.isEnabled} /><span><strong>Automatically publish to Facebook</strong><small>Posts when a motorcycle becomes available on the website.</small></span></label>
         <button className="button-primary" disabled={isSaving}>{isSaving ? "Saving…" : "Save configuration"}</button>

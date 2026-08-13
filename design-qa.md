@@ -9,7 +9,7 @@
 - Full-view side-by-side comparison: `/Users/techboung_vt_macbookpro/Documents/TexMoto/.codex/design-qa-v2/marketplace-comparison-refined.jpg`
 - Viewport: 390 × 844 CSS px, device scale factor 1.
 - Source pixels: 853 × 1844, normalized to 390 × 844. Implementation pixels: 390 × 844. Both sides of the comparison use equal pixel dimensions.
-- State: Sokha Moto public storefront with three available motorcycles and Blue Marketplace stored as the business theme. Settings evidence shows the authenticated owner configuration state.
+- State: TexMoto public storefront with three available motorcycles and Blue Marketplace stored as the business theme. Settings evidence shows the authenticated owner configuration state.
 
 ## Findings
 
